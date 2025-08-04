@@ -1,29 +1,26 @@
-# Create T3 App
+eleven labs voice kullanabilirsin.
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+first time login için neler yapabilirm???
+aklıma gelen şeyler neler...
 
-## What's next? How do I make an app with this?
+başlangıçta hangi planı seçeceğini sorarız
+sonra stripe ekranına göndeririz
+kullanıcıya hangi kategorileri sevdiğini sorarız
+- firts time user signs up user will redirectted to stripe screen (you don't need to do anything about that i will handle it)
+- after user signsup it will redirect to /first-time-login
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
-
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
-
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
-
-## Learn More
-
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
-
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
-
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
-
-## How do I deploy this?
-
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+in this page here is what we are going to do:
+- in here user is going to choose what things are his interests
+    - categories are:
+        - Electronics
+        - Computers
+        - Audio
+        - Gaming
+        - Fashion
+        - Home
+        - Sports
+        - Books
+        - Cars
+- user needs to select at least 3 categories and continue button will be gray until it comes to 3 (and max 10)
+    - and for example if user sellected 2 category it will write 2/3 on button after that it will write Contine
+- after user sellects done

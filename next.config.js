@@ -5,6 +5,19 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "m.media-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.asus.com",
+      },
+    ],
+  },
+};
 
 export default config;
