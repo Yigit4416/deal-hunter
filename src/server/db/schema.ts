@@ -2,10 +2,12 @@ import {
   pgTableCreator,
   index,
   primaryKey,
+  unique,
 } from "drizzle-orm/pg-core";
 
 export const createTable = pgTableCreator((name) => `deal_hunter_${name}`);
 
+// User Categories Table
 export const userCategories = createTable(
   "user_categories",
   (d) => ({
@@ -21,20 +23,23 @@ export const userCategories = createTable(
     books: d.boolean().default(false),
     cars: d.boolean().default(false),
   }),
-  (t) => [index("user_id_idx").on(t.userId)],
+  (t) => [
+    index("user_id_idx").on(t.userId),
+    unique("user_id_unique").on(t.userId), // Foreign key uyumu için gerekli
+  ],
 );
 
-// Holds category names
+// Categories Table
 export const categories = createTable("categories", (d) => ({
   id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
   name: d.varchar({ length: 64 }).notNull().unique(),
 }));
 
-// Holds all products
+// Products Table
 export const products = createTable(
   "products",
   (d) => ({
-    id: d.varchar({ length: 256 }).primaryKey(), // productId
+    id: d.varchar({ length: 256 }).primaryKey(),
     name: d.varchar().notNull(),
     description: d.varchar().notNull(),
     marketplace: d.varchar({ length: 64 }).notNull(),
@@ -43,12 +48,16 @@ export const products = createTable(
   (t) => [index("product_marketplace_idx").on(t.marketplace)],
 );
 
-// Join Table: Products <-> Categories (many-to-many)
+// Join Table: Products <-> Categories
 export const productCategories = createTable(
   "product_categories",
   (d) => ({
-    productId: d.varchar({ length: 256 }).notNull(),
-    categoryId: d.integer().notNull(),
+    productId: d.varchar({ length: 256 }).notNull().references(() => products.id, {
+      onDelete: "cascade",
+    }),
+    categoryId: d.integer().notNull().references(() => categories.id, {
+      onDelete: "cascade",
+    }),
   }),
   (t) => [
     primaryKey({ columns: [t.productId, t.categoryId] }),
@@ -56,13 +65,17 @@ export const productCategories = createTable(
   ],
 );
 
-// Watchlist Table (user <-> product)
+// Watchlist Table
 export const watchlist = createTable(
   "watchlist",
   (d) => ({
     id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-    userId: d.varchar({ length: 256 }).notNull(),
-    productId: d.varchar({ length: 256 }).notNull(),
+    userId: d.varchar({ length: 256 }).notNull().references(() => userCategories.userId, {
+      onDelete: "cascade",
+    }),
+    productId: d.varchar({ length: 256 }).notNull().references(() => products.id, {
+      onDelete: "cascade",
+    }),
   }),
   (t) => [
     index("user_watchlist_idx").on(t.userId),

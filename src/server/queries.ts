@@ -43,3 +43,7 @@ export async function setCategories({ category }: { category: string[] }) {
     console.error(e);
   }
 }
+
+export async function categoryProducts(category:string) {
+  //const result = db.query.productCategories
+}

@@ -4,6 +4,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Check } from "lucide-react"
+import { sendUserCategories } from "./serverToClient"
+import { useRouter } from "next/navigation"
 
 const categories = [
   { id: "electronics", name: "Electronics", icon: "⚡" },
@@ -19,6 +21,7 @@ const categories = [
 
 export default function InterestsSelection() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const router = useRouter()
 
   const toggleCategory = (categoryId: string) => {
     setSelectedCategories((prev) => {
@@ -29,6 +32,7 @@ export default function InterestsSelection() {
       }
       return prev
     })
+    console.log(selectedCategories)
   }
 
   const getButtonText = () => {
@@ -36,6 +40,17 @@ export default function InterestsSelection() {
       return `${selectedCategories.length}/3`
     }
     return "Continue"
+  }
+
+  const buttonClick = async () => {
+    try {
+      const result = await sendUserCategories({userCategories: selectedCategories})
+      console.log(result)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      router.push("/home-page")
+    }
   }
 
   const isButtonEnabled = selectedCategories.length >= 3
@@ -113,6 +128,7 @@ export default function InterestsSelection() {
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }
               `}
+              onClick={buttonClick}
             >
               {getButtonText()}
             </Button>
