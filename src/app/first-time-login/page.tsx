@@ -44,7 +44,7 @@ export default function InterestsSelection() {
 
   const buttonClick = async () => {
     try {
-      const result = await sendUserCategories({userCategories: selectedCategories})
+      const result = await sendUserCategories({ userCategories: selectedCategories })
       console.log(result)
     } catch (e) {
       console.error(e)
