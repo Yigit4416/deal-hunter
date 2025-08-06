@@ -2,18 +2,6 @@
 
 import { setCategories } from "@/server/queries";
 
-type UserCategories = {
-  electronics: boolean;
-  computers: boolean;
-  audio: boolean;
-  gaming: boolean;
-  fashion: boolean;
-  home: boolean;
-  sports: boolean;
-  books: boolean;
-  cars: boolean;
-};
-
 export async function sendUserCategories({
   userCategories,
 }: {
@@ -24,7 +12,7 @@ export async function sendUserCategories({
     if (!result) throw new Error("Something went wrong on saving categories");
 
     console.log(result);
-    return result
+    return result;
   } catch (e) {
     console.error(e);
     return;

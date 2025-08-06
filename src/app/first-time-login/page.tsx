@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Check } from "lucide-react"
 import { sendUserCategories } from "./serverToClient"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
+import { useAuth } from "@clerk/nextjs"
 
 const categories = [
   { id: "electronics", name: "Electronics", icon: "⚡" },
@@ -22,6 +23,9 @@ const categories = [
 export default function InterestsSelection() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const router = useRouter()
+  const { isSignedIn } = useAuth()
+
+  if (!isSignedIn) redirect("/")
 
   const toggleCategory = (categoryId: string) => {
     setSelectedCategories((prev) => {

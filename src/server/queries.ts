@@ -44,6 +44,18 @@ export async function setCategories({ category }: { category: string[] }) {
   }
 }
 
-export async function categoryProducts(category:string) {
-  //const result = db.query.productCategories
+export async function categoryProducts(category: number) {
+  try {
+    const result = await db.query.productCategories.findMany({
+      where: (modal, {eq}) => eq(modal.categoryId, category)
+    })
+
+    if(result.length === 0) {
+      return null;
+    } else {
+      //const products = 
+    }
+  } catch (e) {
+    console.error(e)
+  }
 }

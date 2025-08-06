@@ -7,35 +7,30 @@ import {
 
 export const createTable = pgTableCreator((name) => `deal_hunter_${name}`);
 
-// User Categories Table
+// Categories Table (New - for better normalization)
+export const categories = createTable("categories", (d) => ({
+  id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
+  name: d.varchar({ length: 50 }).notNull().unique(), // electronics, computers, audio, etc.
+  description: d.varchar(),
+}));
+
+// User Categories Table (Updated to reference categories table)
 export const userCategories = createTable(
   "user_categories",
   (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
     userId: d.varchar({ length: 256 }).notNull(),
-    electronics: d.boolean().default(false),
-    computers: d.boolean().default(false),
-    audio: d.boolean().default(false),
-    gaming: d.boolean().default(false),
-    fashion: d.boolean().default(false),
-    home: d.boolean().default(false),
-    sports: d.boolean().default(false),
-    books: d.boolean().default(false),
-    cars: d.boolean().default(false),
+    categoryId: d.integer().notNull().references(() => categories.id, {
+      onDelete: "cascade",
+    }),
   }),
   (t) => [
-    index("user_id_idx").on(t.userId),
-    unique("user_id_unique").on(t.userId), // Foreign key uyumu için gerekli
-  ],
+    primaryKey({ columns: [t.userId, t.categoryId] }),
+    index("user_categories_user_idx").on(t.userId),
+    index("user_categories_category_idx").on(t.categoryId),
+  ]
 );
 
-// Categories Table
-export const categories = createTable("categories", (d) => ({
-  id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-  name: d.varchar({ length: 64 }).notNull().unique(),
-}));
-
-// Products Table
+// Products Table (unchanged)
 export const products = createTable(
   "products",
   (d) => ({
@@ -45,10 +40,10 @@ export const products = createTable(
     marketplace: d.varchar({ length: 64 }).notNull(),
     link: d.varchar().notNull(),
   }),
-  (t) => [index("product_marketplace_idx").on(t.marketplace)],
+  (t) => [index("product_marketplace_idx").on(t.marketplace)]
 );
 
-// Join Table: Products <-> Categories
+// Product Categories Table (Fixed - now supports multiple categories per product)
 export const productCategories = createTable(
   "product_categories",
   (d) => ({
@@ -61,24 +56,24 @@ export const productCategories = createTable(
   }),
   (t) => [
     primaryKey({ columns: [t.productId, t.categoryId] }),
-    index("product_category_idx").on(t.productId, t.categoryId),
-  ],
+    index("product_categories_product_idx").on(t.productId),
+    index("product_categories_category_idx").on(t.categoryId),
+  ]
 );
 
-// Watchlist Table
+// Watchlist Table (Updated foreign key reference)
 export const watchlist = createTable(
   "watchlist",
   (d) => ({
     id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-    userId: d.varchar({ length: 256 }).notNull().references(() => userCategories.userId, {
-      onDelete: "cascade",
-    }),
+    userId: d.varchar({ length: 256 }).notNull(), // Remove the wrong foreign key reference
     productId: d.varchar({ length: 256 }).notNull().references(() => products.id, {
       onDelete: "cascade",
     }),
   }),
   (t) => [
-    index("user_watchlist_idx").on(t.userId),
-    index("product_watchlist_idx").on(t.productId),
-  ],
+    unique("user_product_unique").on(t.userId, t.productId), // Prevent duplicate entries
+    index("watchlist_user_idx").on(t.userId),
+    index("watchlist_product_idx").on(t.productId),
+  ]
 );
