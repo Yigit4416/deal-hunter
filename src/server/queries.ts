@@ -21,7 +21,7 @@ export async function setCategories({ category }: { category: string[] }) {
   const cars = category.includes("cars");
 
   try {
-    const result = db.insert(userCategories).values({
+    const result = await db.insert(userCategories).values({
       userId: user.userId,
       electronics: electronics,
       computers: computers,
@@ -44,18 +44,58 @@ export async function setCategories({ category }: { category: string[] }) {
   }
 }
 
-export async function categoryProducts(category: number) {
+export async function categoryProducts(category: string) {
   try {
-    const result = await db.query.productCategories.findMany({
-      where: (modal, {eq}) => eq(modal.categoryId, category)
-    })
-
-    if(result.length === 0) {
-      return null;
-    } else {
-      //const products = 
+    const categoryId = await db.query.categories.findFirst({
+      where: (modal, { eq }) => eq(modal.name, category),
+    });
+    if (!categoryId) {
+      throw new Error("Couldn't find any category");
     }
+
+    const result = await db.query.productCategories.findMany({
+      where: (modal, { eq }) => eq(modal.categoryId, categoryId.id),
+    });
+
+    if (result.length === 0 || result === undefined) {
+      throw new Error("No product on this category");
+    }
+
+    const productList = await db.query.products.findMany({
+      where: (modal, { inArray }) =>
+        inArray(
+          modal.id,
+          result.map((r) => r.productId),
+        ),
+    });
+
+    return productList;
   } catch (e) {
-    console.error(e)
+    console.error(e);
+    return [];
+  }
+}
+
+export async function getProduct({ productId }: { productId: string }) {
+  try {
+    const result = await db.query.products.findFirst({
+      where: (modal, { eq }) => eq(modal.id, productId),
+    });
+    if (!result) {
+      throw new Error("There is no such product");
+    }
+    return result;
+  } catch (e) {
+    console.error(e);
+    throw new Error("Something went wrong on getProduct");
+  }
+}
+
+export async function getAllProducts() {
+  try {
+    const results = await db.query.products.findMany();
+    return results;
+  } catch (e) {
+    console.error(e);
   }
 }
