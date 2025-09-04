@@ -1,101 +1,146 @@
 import "server-only";
-
-import { auth } from "@clerk/nextjs/server";
 import { db } from "./db";
-import { userCategories } from "./db/schema";
+import {
+  products,
+  brands,
+  categories,
+  merchants,
+  offers,
+  productSpecs,
+} from "./db/schema";
+import { eq, and } from "drizzle-orm";
 
-export async function setCategories({ category }: { category: string[] }) {
-  const user = await auth();
-  if (!user.userId) {
-    throw new Error("Unauthorized");
-  }
+// brand upsert
+async function upsertBrand(brand: { name: string; slug: string } | null) {
+  if (!brand) return null;
+  const existing = await db.query.brands.findFirst({
+    where: (m, { eq }) => eq(m.name, brand.name),
+  });
+  if (existing) return existing.id;
 
-  const electronics = category.includes("electronics");
-  const computers = category.includes("computers");
-  const audio = category.includes("audio");
-  const gaming = category.includes("gaming");
-  const fashion = category.includes("fashion");
-  const home = category.includes("home");
-  const sports = category.includes("sports");
-  const books = category.includes("books");
-  const cars = category.includes("cars");
-
-  try {
-    const result = await db.insert(userCategories).values({
-      userId: user.userId,
-      electronics: electronics,
-      computers: computers,
-      audio: audio,
-      gaming: gaming,
-      fashion: fashion,
-      home: home,
-      sports: sports,
-      books: books,
-      cars: cars,
-    });
-
-    if (!result) {
-      throw new Error("Something went wrong while uploading userCategory info");
-    }
-
-    return result;
-  } catch (e) {
-    console.error(e);
-  }
+  const [inserted] = await db
+    .insert(brands)
+    .values({ name: brand.name, slug: brand.slug })
+    .returning();
+  return inserted.id;
 }
 
-export async function categoryProducts(category: string) {
-  try {
-    const categoryId = await db.query.categories.findFirst({
-      where: (modal, { eq }) => eq(modal.name, category),
-    });
-    if (!categoryId) {
-      throw new Error("Couldn't find any category");
-    }
+// category upsert
+async function upsertCategory(category: { name: string; slug: string } | null) {
+  if (!category) return null;
+  const existing = await db.query.categories.findFirst({
+    where: (m, { eq }) => eq(m.name, category.name),
+  });
+  if (existing) return existing.id;
 
-    const result = await db.query.productCategories.findMany({
-      where: (modal, { eq }) => eq(modal.categoryId, categoryId.id),
-    });
-
-    if (result.length === 0 || result === undefined) {
-      throw new Error("No product on this category");
-    }
-
-    const productList = await db.query.products.findMany({
-      where: (modal, { inArray }) =>
-        inArray(
-          modal.id,
-          result.map((r) => r.productId),
-        ),
-    });
-
-    return productList;
-  } catch (e) {
-    console.error(e);
-    return [];
-  }
+  const [inserted] = await db
+    .insert(categories)
+    .values({ name: category.name, slug: category.slug })
+    .returning();
+  return inserted.id;
 }
 
-export async function getProduct({ productId }: { productId: string }) {
-  try {
-    const result = await db.query.products.findFirst({
-      where: (modal, { eq }) => eq(modal.id, productId),
-    });
-    if (!result) {
-      throw new Error("There is no such product");
-    }
-    return result;
-  } catch (e) {
-    console.error(e);
-    throw new Error("Something went wrong on getProduct");
-  }
+// merchant upsert
+async function upsertMerchant(merchant: { id: number; name: string }) {
+  const existing = await db.query.merchants.findFirst({
+    where: (m, { eq }) => eq(m.id, merchant.id),
+  });
+  if (existing) return existing.id;
+
+  const [inserted] = await db.insert(merchants).values(merchant).returning();
+  return inserted.id;
 }
 
-export async function getAllProducts() {
-  try {
-    const results = await db.query.products.findMany();
-    return results;
-  } catch (e) {
-    console.error(e);
+// ürün + ilişkileri upsert
+export async function upsertProducts(apiProducts: any[]) {
+  for (const p of apiProducts) {
+    const brandId = await upsertBrand(p.brand);
+    const categoryId = await upsertCategory(p.category);
+
+    const existingProduct = await db.query.products.findFirst({
+      where: (m, { eq }) => eq(m.id, String(p.id)),
+    });
+
+    if (existingProduct) {
+      await db
+        .update(products)
+        .set({
+          title: p.title,
+          url: p.url,
+          model: p.model,
+          imageId: p.imageId,
+          merchantCount: p.merchantCount,
+          offerCount: p.offerCount,
+          brandId,
+          categoryId,
+        })
+        .where(eq(products.id, String(p.id)));
+    } else {
+      await db.insert(products).values({
+        id: String(p.id),
+        title: p.title,
+        url: p.url,
+        model: p.model,
+        imageId: p.imageId,
+        merchantCount: p.merchantCount,
+        offerCount: p.offerCount,
+        brandId,
+        categoryId,
+      });
+    }
+
+    // offers
+    if (p.topOffers) {
+      for (const offer of p.topOffers) {
+        const merchantId = await upsertMerchant(offer.merchant);
+
+        const existingOffer = await db.query.offers.findFirst({
+          where: (m, { eq }) => eq(m.id, offer.id),
+        });
+
+        if (existingOffer) {
+          await db
+            .update(offers)
+            .set({
+              price: offer.price,
+              unitPrice: offer.unitPrice,
+              productId: String(p.id),
+              merchantId,
+            })
+            .where(eq(offers.id, offer.id));
+        } else {
+          await db.insert(offers).values({
+            id: offer.id,
+            price: offer.price,
+            unitPrice: offer.unitPrice,
+            productId: String(p.id),
+            merchantId,
+          });
+        }
+      }
+    }
+
+    // specs
+    if (p.topSpecs) {
+      for (const spec of p.topSpecs) {
+        const existingSpec = await db.query.productSpecs.findFirst({
+          where: (m, { and, eq }) =>
+            and(eq(m.productId, String(p.id)), eq(m.name, spec.name)),
+        });
+
+        if (existingSpec) {
+          await db
+            .update(productSpecs)
+            .set({ value: spec.value })
+            .where(eq(productSpecs.id, existingSpec.id));
+        } else {
+          await db.insert(productSpecs).values({
+            productId: String(p.id),
+            name: spec.name,
+            value: spec.value,
+          });
+        }
+      }
+    }
   }
 }
