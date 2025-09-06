@@ -8,7 +8,8 @@ import {
   offers,
   productSpecs,
 } from "./db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import { off } from "process";
 
 // brand upsert
 async function upsertBrand(brand: { name: string; slug: string } | null) {
@@ -182,5 +183,42 @@ export async function upsertProducts(apiProducts: ApiProducts[]) {
   } catch (e) {
     console.error(e);
     throw new Error("Error on saving new products");
+  }
+}
+
+// What do we need:
+// 1- images
+// 2- title
+// 3- description (we will get the top specs and somehow will fit there)
+// 4- original and current price (in here we can get the median of prices and show user median and cheapest options)
+// 5- solving url problem
+export async function getAllProducts() {
+  try {
+    const result = await db
+      .select({
+        id: products.id,
+        title: products.title,
+        imageId: products.imageId,
+        offers: sql`json_agg(json_build_object('merchantId', ${offers.merchantId}, 'price', ${offers.price}))`,
+        specs: sql`json_agg(json_build_object('name', ${productSpecs.name}, 'value', ${productSpecs.value}))`,
+      })
+      .from(products)
+      .leftJoin(offers, eq(products.id, offers.productId))
+      .leftJoin(productSpecs, eq(products.id, productSpecs.productId))
+      .groupBy(products.id, products.title, products.imageId);
+
+    return result;
+  } catch (e) {
+    console.error(e);
+    throw new Error("Problem on getAllProducts");
+  }
+}
+
+// will continue
+export async function getProduct() {
+  try {
+  } catch (e) {
+    console.error(e);
+    return;
   }
 }

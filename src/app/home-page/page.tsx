@@ -41,7 +41,8 @@ export default async function HomePage() {
                   <Image
                     width={400}
                     height={300}
-                    src={deal.image || "/placeholder.svg"}
+                    // src={`${deal.imageId}`}
+                    src="https://cdn.cimri.io/image/148x148/msi-katana-17-b13vek-1035xtr-i7-13620h-16gb-ram-512gb-ssd-rtx-4050-freedos-17-3-inc-oyun-bilgisayari_870001865.jpg"
                     alt={deal.title}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
@@ -56,22 +57,34 @@ export default async function HomePage() {
                       {deal.title}
                     </h3>
                     <p className="line-clamp-2 text-xs text-gray-500 sm:text-sm">
-                      {deal.description}
+                      Closed for now
+                      {/*{deal.description}*/}
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold text-orange-600 sm:text-xl">
-                        {deal.price}
+                        {[
+                          (
+                            deal.offers as {
+                              id: number;
+                              price: number;
+                              merchant: { id: number; name: string };
+                              unitPrice: number | null;
+                            }
+                          ).price,
+                        ]}
                       </span>
-                      <span className="text-sm text-gray-400 line-through">
+                      In here we will have median price
+                      {/*<span className="text-sm text-gray-400 line-through">
                         {deal.originalPrice}
-                      </span>
+                      </span>*/}
                     </div>
                   </div>
 
                   <div className="inset-x-0 bottom-0 mt-auto space-y-2 pt-1">
+                    {/*We will update the link structure*/}
                     <Link href={`/product/${deal.id}`} className="block">
                       <Button
                         size="sm"
